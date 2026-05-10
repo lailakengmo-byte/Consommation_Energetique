@@ -1,7 +1,5 @@
 """
 Prédiction de Consommation Énergétique
-Auteur : KENGMO Maryline Laila — Session Normale 2026
-Modèle : DecisionTreeRegressor (max_depth=7, min_samples_leaf=100)
 """
 
 import os
@@ -22,7 +20,7 @@ from sklearn.tree import DecisionTreeRegressor, plot_tree
 warnings.filterwarnings("ignore")
 matplotlib.use("Agg")
 
-# ─── Chemins ──────────────────────────────────────────────────────────────────
+#  Chemins 
 BASE        = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH   = os.path.join(BASE, "data",  "dataset.csv")
 MODEL_PATH  = os.path.join(BASE, "model", "model.pkl")
@@ -36,7 +34,7 @@ from utils.fonctions_utiles import (
     interpreter_r2,
 )
 
-# ─── Config page ──────────────────────────────────────────────────────────────
+# Config page 
 st.set_page_config(
     page_title="Consommation Énergétique — ML",
     page_icon="⚡",
@@ -44,7 +42,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── CSS minimal et propre ────────────────────────────────────────────────────
+# CSS minimal et propre 
 st.markdown("""
 <style>
     /* titres de section */
@@ -76,7 +74,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ─── Chargement données & modèle (cachés) ─────────────────────────────────────
+# Chargement données & modèle (cachés) 
 
 @st.cache_data
 def load_raw():
@@ -109,16 +107,14 @@ y_pred     = model.predict(X_test)
 metriques  = calculer_metriques(y_test, y_pred)
 
 
-# ─── Sidebar ──────────────────────────────────────────────────────────────────
+#  Sidebar 
 
 with st.sidebar:
     st.markdown("## ⚡ Navigation")
     page = st.radio("", [
         "🏠 Accueil",
         "📊 Exploration",
-        "🤖 Modélisation",
         "📈 Résultats",
-        "🔑 Variables importantes",
         "🔮 Prédiction",
         "📝 Conclusion",
     ], label_visibility="collapsed")
@@ -130,9 +126,9 @@ with st.sidebar:
     st.caption(f"**Dataset :** {raw.shape[0]} lignes · {raw.shape[1]} colonnes")
 
 
-# ═══════════════════════════════════════════════════════════
+
 # PAGE 1 — ACCUEIL
-# ═══════════════════════════════════════════════════════════
+
 
 if page == "🏠 Accueil":
 
@@ -211,9 +207,9 @@ if page == "🏠 Accueil":
     st.dataframe(desc, use_container_width=True, hide_index=True)
 
 
-# ═══════════════════════════════════════════════════════════
+
 # PAGE 2 — EXPLORATION
-# ═══════════════════════════════════════════════════════════
+
 
 elif page == "📊 Exploration":
 
@@ -310,91 +306,10 @@ elif page == "📊 Exploration":
     st.pyplot(fig); plt.close()
 
 
-# ═══════════════════════════════════════════════════════════
-# PAGE 3 — MODÉLISATION
-# ═══════════════════════════════════════════════════════════
-
-elif page == "🤖 Modélisation":
-
-    st.markdown('<div class="section-title">Démarche de modélisation</div>',
-                unsafe_allow_html=True)
-    st.write(
-        "Conformément aux consignes, le modèle retenu est le **DecisionTreeRegressor** "
-        "de scikit-learn. Il a l'avantage d'être interprétable et ne nécessite pas "
-        "de mise à l'échelle des données."
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown('<div class="section-title">Hyperparamètres</div>',
-                    unsafe_allow_html=True)
-        params = pd.DataFrame({
-            "Paramètre": ["max_depth", "min_samples_leaf", "random_state", "criterion"],
-            "Valeur":    ["7",          "100",               "42",           "squared_error"],
-            "Rôle": [
-                "Profondeur maximale de l'arbre — limite l'overfitting",
-                "Minimum d'observations par feuille — évite les nœuds trop spécifiques",
-                "Reproductibilité des résultats",
-                "Critère de division des nœuds (MSE)",
-            ],
-        })
-        st.dataframe(params, use_container_width=True, hide_index=True)
-
-    with col2:
-        st.markdown('<div class="section-title">Pipeline ML</div>',
-                    unsafe_allow_html=True)
-        st.markdown("""
-        1. **Chargement** du dataset (1000 lignes)
-        2. **Imputation** catégorielles → mode, numériques → moyenne
-        3. **Encodage** One-Hot (`drop_first=True`)
-        4. **Split** 75% train / 25% test (`random_state=42`)
-        5. **Entraînement** `DecisionTreeRegressor`
-        6. **Évaluation** : MAE, MSE, RMSE, R²
-        """)
-
-    # Division données
-    st.markdown('<div class="section-title">Division des données</div>',
-                unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Lignes totales (après nettoyage)", data.shape[0])
-    c2.metric("Lignes train (75%)",  X_train.shape[0])
-    c3.metric("Lignes test (25%)",   X_test.shape[0])
-
-    # Preprocessing — rappel
-    st.markdown('<div class="section-title">Preprocessing appliqué</div>',
-                unsafe_allow_html=True)
-    with st.expander("Voir les étapes de preprocessing"):
-        st.markdown("""
-        **Variables catégorielles :**
-        - `jour_semaine` : imputation par le mode, puis One-Hot Encoding
-        - `type_habitation` : imputation par le mode, puis One-Hot Encoding
-        - `drop_first=True` → référence : Dimanche / Appartement
-
-        **Variables numériques :**
-        - Lignes sans `consommation (kW)` → supprimées (on ne peut pas imputer la cible)
-        - Autres colonnes numériques → imputation par la moyenne
-
-        **Résultat :** 852 lignes × 13 features après encodage
-        """)
-
-    # Visualisation de l'arbre
-    st.markdown('<div class="section-title">Visualisation de l\'arbre (profondeur 3)</div>',
-                unsafe_allow_html=True)
-    st.caption("Affichage limité à max_depth=3 pour la lisibilité.")
-    dt_viz = DecisionTreeRegressor(max_depth=3, min_samples_leaf=100, random_state=42)
-    dt_viz.fit(X_train, y_train)
-    fig, ax = plt.subplots(figsize=(20, 8))
-    plot_tree(dt_viz, feature_names=X.columns, filled=True,
-              rounded=True, fontsize=9, max_depth=3, ax=ax)
-    ax.set_title("Structure de l'arbre de décision (max_depth=3)")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
 
 
-# ═══════════════════════════════════════════════════════════
 # PAGE 4 — RÉSULTATS
-# ═══════════════════════════════════════════════════════════
+
 
 elif page == "📈 Résultats":
 
@@ -483,66 +398,12 @@ elif page == "📈 Résultats":
     st.pyplot(fig); plt.close()
 
 
-# ═══════════════════════════════════════════════════════════
-# PAGE 5 — IMPORTANCE DES VARIABLES
-# ═══════════════════════════════════════════════════════════
-
-elif page == "🔑 Variables importantes":
-
-    st.markdown('<div class="section-title">Importance des variables — Decision Tree</div>',
-                unsafe_allow_html=True)
-
-    imp_df = pd.DataFrame({
-        "Variable":  feats,
-        "Importance": model.feature_importances_,
-    }).sort_values("Importance", ascending=False)
-
-    # Graphique
-    fig, ax = plt.subplots(figsize=(10, 6))
-    imp_sorted = imp_df.sort_values("Importance", ascending=True)
-    colors = ["#4a90d9" if v > 0 else "#d0dce8" for v in imp_sorted["Importance"]]
-    ax.barh(imp_sorted["Variable"], imp_sorted["Importance"], color=colors)
-    ax.set_title("Importance des variables — DecisionTreeRegressor")
-    ax.set_xlabel("Importance (somme des réductions d'impureté)")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
-
-    # Tableau
-    st.dataframe(
-        imp_df.assign(Importance=imp_df["Importance"].round(4)),
-        use_container_width=True, hide_index=True
-    )
-
-    # Interprétation
-    top_var = imp_df.iloc[0]["Variable"]
-    top_val = imp_df.iloc[0]["Importance"]
-    zero_count = int((imp_df["Importance"] == 0).sum())
-
-    st.markdown(f"""
-    <div class="info-block">
-    <b>Interprétation :</b><br>
-    La variable la plus utilisée par l'arbre est <b>{top_var}</b>
-    (importance = {top_val:.4f}). {zero_count} variables ont une importance nulle,
-    ce qui signifie que l'arbre ne les utilise pas pour ses divisions —
-    signe supplémentaire du signal prédictif très faible du dataset.
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.expander("ℹ️ Comment lire l'importance des variables ?"):
-        st.markdown("""
-        L'importance d'une variable dans un arbre de décision est calculée comme la **somme
-        des réductions d'impureté** (ici MSE) obtenues à chaque nœud où cette variable est
-        utilisée, pondérée par le nombre d'observations.
-
-        - Une importance élevée → la variable est souvent choisie pour diviser les données
-        - Une importance nulle → la variable n'est jamais sélectionnée par l'arbre
-        - Les importances sont normalisées pour sommer à 1
-        """)
 
 
-# ═══════════════════════════════════════════════════════════
+
+
 # PAGE 6 — PRÉDICTION
-# ═══════════════════════════════════════════════════════════
+
 
 elif page == "🔮 Prédiction":
 
@@ -613,9 +474,9 @@ elif page == "🔮 Prédiction":
         """, unsafe_allow_html=True)
 
 
-# ═══════════════════════════════════════════════════════════
+
 # PAGE 7 — CONCLUSION
-# ═══════════════════════════════════════════════════════════
+
 
 elif page == "📝 Conclusion":
 
@@ -625,7 +486,7 @@ elif page == "📝 Conclusion":
     st.markdown("### Pourquoi un R² négatif ?")
     st.markdown("""
     Un R² négatif signifie que le modèle est moins performant que de prédire
-    simplement la **moyenne** pour chaque observation. Cela peut paraître surprenant,
+    simplement lamoyenne pour chaque observation. Cela peut paraître surprenant,
     mais s'explique par plusieurs facteurs :
 
     - **Les features ne capturent pas les vrais déterminants** de la consommation :
@@ -639,41 +500,12 @@ elif page == "📝 Conclusion":
     st.markdown("""
     Malgré les performances limitées, la démarche est rigoureuse :
     - Preprocessing complet (imputation, encodage, vérification des doublons)
-    - Entraînement avec `random_state=42` pour la reproductibilité
-    - Évaluation sur un jeu de test séparé (25%)
     - Analyse de l'importance des variables
     """)
 
-    st.markdown("### Recommandations pour améliorer le modèle")
+    
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("""
-        **Sur les données :**
-        - Collecter des features plus pertinentes (superficie, équipements)
-        - Réduire le taux de valeurs manquantes
-        - Vérifier la qualité des mesures de consommation
-        """)
-    with col2:
-        st.markdown("""
-        **Sur le modèle :**
-        - Essayer Random Forest ou Gradient Boosting (XGBoost)
-        - Explorer des approches de séries temporelles si données ordonnées
-        - Optimiser les hyperparamètres via GridSearchCV
-        """)
 
-    st.markdown("### Conclusion académique")
-    st.markdown("""
-    <div class="info-block">
-    Ce projet a appliqué une démarche Machine Learning complète et honnête.
-    Le DecisionTreeRegressor a été entraîné, évalué et interprété correctement.
-    Les performances obtenues (R² ≈ –0.027, RMSE ≈ 2.85 kW) sont fidèles à la
-    réalité des données disponibles — elles n'ont pas été artificiellement
-    améliorées ni dissimulées.<br><br>
-    La limite principale identifiée est la <strong>faiblesse du signal prédictif</strong>
-    dans le dataset, et non un défaut dans la méthodologie appliquée.
-    </div>
-    """, unsafe_allow_html=True)
 
     # Tableau de synthèse
     st.markdown('<div class="section-title">Tableau de synthèse</div>',
@@ -692,9 +524,3 @@ elif page == "📝 Conclusion":
     })
     st.dataframe(synthese, use_container_width=True, hide_index=True)
 
-
-# ─── Footer ───────────────────────────────────────────────────────────────────
-st.markdown(
-    '<div class="footer">Projet Machine Learning · KENGMO Maryline Laila · Session Normale 2026</div>',
-    unsafe_allow_html=True,
-)
